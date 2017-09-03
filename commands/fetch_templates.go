@@ -55,8 +55,7 @@ func fetchTemplates() error {
 	log.Printf("Cleaning up zip file...")
 	if _, err := os.Stat(zipFileName); err == nil {
 		os.Remove(zipFileName)
-	}
-	else {
+	} else {
 		return err
 	}
 
