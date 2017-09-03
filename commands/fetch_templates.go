@@ -16,10 +16,10 @@ import (
 )
 
 // fetchTemplates fetch code templates from GitHub master zip file.
-func fetchTemplates() error {
+func fetchTemplates(client HttpClient) error {
 
 	const zipFileName = "./master.zip"
-	err := fetchMasterZip()
+	err := fetchMasterZip(client)
 
 	zipFile, err := zip.OpenReader(zipFileName)
 	if err != nil {
@@ -62,14 +62,14 @@ func fetchTemplates() error {
 	return err
 }
 
-func fetchMasterZip() error {
+func fetchMasterZip(client HttpClient) error {
 	var err error
 	if _, err = os.Stat("master.zip"); err != nil {
 		templateURL := os.Getenv("templateUrl")
 		if len(templateURL) == 0 {
 			templateURL = "https://github.com/alexellis/faas-cli/archive/master.zip"
 		}
-		c := http.Client{}
+		//c := MockableClient{}
 
 		req, err := http.NewRequest("GET", templateURL, nil)
 		if err != nil {
@@ -77,7 +77,7 @@ func fetchMasterZip() error {
 			return err
 		}
 		log.Printf("HTTP GET %s\n", templateURL)
-		res, err := c.Do(req)
+		res, err := client.Do(req)
 		if err != nil {
 			log.Println(err.Error())
 			return err

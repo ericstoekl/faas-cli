@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"net/http"
 
 	"github.com/alexellis/faas-cli/builder"
 	"github.com/alexellis/faas-cli/stack"
@@ -15,8 +16,9 @@ import (
 
 // Flags that are to be added to commands.
 var (
-	nocache bool
-	squash  bool
+	nocache  bool
+	squash   bool
+	mockHttp bool
 )
 
 func init() {
@@ -30,6 +32,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&nocache, "no-cache", false, "Do not use Docker's build cache")
 	buildCmd.Flags().BoolVar(&squash, "squash", false, `Use Docker's squash flag for smaller images
                          [experimental] `)
+	buildCmd.Flags().BoolVar(&mockHttp, "mock-http", false, "Use mock http client for testing")
 
 	// Set bash-completion.
 	_ = buildCmd.Flags().SetAnnotation("handler", cobra.BashCompSubdirsInDir, []string{})
@@ -88,7 +91,9 @@ func runBuild(cmd *cobra.Command, args []string) {
 					return
 				}
 
-				builder.BuildImage(function.Image, function.Handler, function.Name, function.Language, nocache, squash)
+				if !mockHttp {
+					builder.BuildImage(function.Image, function.Handler, function.Name, function.Language, nocache, squash)
+				}
 			}
 		}
 	} else {
@@ -115,7 +120,14 @@ func pullTemplates() error {
 	if err != nil || exists == nil {
 		log.Println("No templates found in current directory.")
 
-		err = fetchTemplates()
+		var client HttpClient
+		if mockHttp {
+			client = &ClientMock{}
+		} else {
+			client = &http.Client{}
+		}
+
+		err = fetchTemplates(client)
 		if err != nil {
 			log.Println("Unable to download templates from Github.")
 			return err
