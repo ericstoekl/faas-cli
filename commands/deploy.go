@@ -95,9 +95,30 @@ func runDeploy(cmd *cobra.Command, args []string) {
 
 		for k, function := range services.Functions {
 			function.Name = k
-			fmt.Printf("Deploying: %s.\n", function.Name)
 			if function.Constraints != nil {
 				constraints = *function.Constraints
+			}
+
+			// Get FProcess to use from the ./template/template.yml, if a template is being used
+			if function.Language != "" && function.Language != "Dockerfile" && function.Language != "dockerfile" {
+				pathToTemplateYAML := "./template/" + function.Language + "/template.yml"
+				if _, err := os.Stat(pathToTemplateYAML); os.IsNotExist(err) {
+					log.Fatalln(err.Error())
+					return
+				}
+
+				var langTemplate stack.LanguageTemplate
+				parsedLangTemplate, err := stack.ParseYAMLForLanguageTemplate(pathToTemplateYAML)
+
+				if err != nil {
+					log.Fatalln(err.Error())
+					return
+				}
+
+				if parsedLangTemplate != nil {
+					langTemplate = *parsedLangTemplate
+					function.FProcess = langTemplate.FProcess
+				}
 			}
 
 			proxy.DeployFunction(function.FProcess, services.Provider.GatewayURL, function.Name, function.Image, function.Language, replace, function.Environment, services.Provider.Network, constraints)
