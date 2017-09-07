@@ -71,7 +71,7 @@ the "Dockerfile" lang type in your YAML file.
 		return
 	}
 
-	PullTemplates("")
+	PullTemplates()
 
 	if validTemplate(lang) == false {
 		fmt.Printf("%s is unavailable or not supported.\n", lang)

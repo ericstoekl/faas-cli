@@ -42,3 +42,8 @@ type Services struct {
 	Functions map[string]Function `yaml:"functions,omitempty"`
 	Provider  Provider            `yaml:"provider,omitempty"`
 }
+
+type LanguageTemplate struct {
+	Language string `yaml:"lang"`
+	FProcess string `yaml:"fprocess"`
+}
