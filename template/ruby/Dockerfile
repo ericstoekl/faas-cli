@@ -8,16 +8,23 @@ RUN apk --no-cache add curl \
     && apk del curl --no-cache
 
 WORKDIR /root/
+RUN mkdir -p /home/app/
+WORKDIR /home/app/
 
 COPY Gemfile		.
 COPY index.rb           .
 COPY function           function
 RUN bundle install 
 
-WORKDIR /root/function/
+WORKDIR /home/app/function/
 RUN bundle install 
 
-WORKDIR /root/
+WORKDIR /home/app/
+
+RUN adduser app -D
+RUN chown -R app ./
+USER app
+
 ENV fprocess="ruby index.rb"
 HEALTHCHECK --interval=2s CMD [ -e /tmp/.lock ] || exit 1
 
