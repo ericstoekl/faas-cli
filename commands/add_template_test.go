@@ -3,12 +3,11 @@
 package commands
 
 import (
-	"testing"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"io/ioutil"
 	"os"
-
+	"testing"
 )
 
 func Test_addTemplate(t *testing.T) {
@@ -28,7 +27,7 @@ func Test_addTemplate(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	URL = ts.URL
+	repository = ts.URL
 	faasCmd.SetArgs([]string{"add-template"})
 	faasCmd.Execute()
 

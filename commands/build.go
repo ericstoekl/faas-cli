@@ -116,7 +116,7 @@ func PullTemplates() error {
 	if err != nil || exists == nil {
 		log.Println("No templates found in current directory.")
 
-		err = fetchTemplates()
+		err = fetchTemplates("", false)
 		if err != nil {
 			log.Println("Unable to download templates from Github.")
 			return err
