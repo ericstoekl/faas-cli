@@ -9,14 +9,16 @@ import (
 
 	"os"
 
+	"regexp"
+
 	"github.com/spf13/cobra"
 )
 
 // Args and Flags that are to be added to commands
 
 var (
-	repository  string
-	overwrite   bool
+	repository string
+	overwrite  bool
 )
 
 func init() {
@@ -30,7 +32,13 @@ var addTemplateCmd = &cobra.Command{
 	Use: "add-template <repository URL>",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("A repository URL must be sepecified")
+			return errors.New("A repository URL must be specified")
+		} else {
+			var validURL = regexp.MustCompile(`^https?://.+`)
+
+			if !validURL.MatchString(args[0]) {
+				return errors.New("The given URL does not begin with http")
+			}
 		}
 		return nil
 	},

@@ -169,6 +169,5 @@ func canWriteLanguage(language string, overwrite bool) bool {
 		return cache[language]
 	}
 
-	log.Println("Language is unkwown, skip")
 	return false
 }
