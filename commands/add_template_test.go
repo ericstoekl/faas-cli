@@ -5,9 +5,11 @@ package commands
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -45,7 +47,7 @@ func Test_addTemplate(t *testing.T) {
 	}
 }
 
-func Test_addTemplate_with_overwrite(t *testing.T) {
+func Test_addTemplate_with_overwriting(t *testing.T) {
 	ts := httpTestServer(t)
 	defer ts.Close()
 
@@ -53,23 +55,30 @@ func Test_addTemplate_with_overwrite(t *testing.T) {
 	faasCmd.SetArgs([]string{"add-template", repository})
 	faasCmd.Execute()
 
+	// reset cache
+	cache = make(map[string]bool)
+
 	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	r := regexp.MustCompile(`(?m:overwriting is not allowed)`)
 
 	faasCmd.SetArgs([]string{"add-template", repository})
-	faasCmd.SetOutput(&buf)
 	faasCmd.Execute()
 
-	if !strings.Contains(buf.String(), "overwrite is not allowed") {
-		t.Fatal()
+	// reset cache
+	cache = make(map[string]bool)
+
+	if !r.MatchString(buf.String()) {
+		t.Fatal(buf.String())
 	}
 
 	buf.Reset()
 
 	faasCmd.SetArgs([]string{"add-template", repository, "--overwrite"})
-	faasCmd.SetOutput(&buf)
 	faasCmd.Execute()
 
-	if strings.Contains(buf.String(), "overwrite is not allowed") {
+	if r.MatchString(buf.String()) {
 		t.Fatal()
 	}
 

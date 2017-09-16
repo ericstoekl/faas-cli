@@ -24,10 +24,7 @@ var cache = make(map[string]bool)
 // fetchTemplates fetch code templates from GitHub master zip file.
 func fetchTemplates(templateURL string, overwrite bool) error {
 	if len(templateURL) == 0 {
-		templateURL = os.Getenv("templateUrl")
-		if len(templateURL) == 0 {
-			templateURL = defaultTemplateRepository
-		}
+		templateURL = defaultTemplateRepository
 	} else {
 		templateURL = templateURL + "/archive/master.zip"
 	}
@@ -44,19 +41,31 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 		var rc io.ReadCloser
 
 		relativePath := z.Name[strings.Index(z.Name, "/")+1:]
-		if relativePath == "template/" || strings.Index(relativePath, "template/") != 0 {
+		if strings.Index(relativePath, "template/") != 0 {
 			// Process only directories inside "template" at root
 			continue
 		}
 
 		var language string
-		if languageSplit := strings.Split(relativePath, "/"); len(languageSplit) > 1 {
+		if languageSplit := strings.Split(relativePath, "/"); len(languageSplit) > 2 {
 			language = languageSplit[1]
-		} else {
-			continue
-		}
 
-		if !canWriteLanguage(language, overwrite) {
+			if len(languageSplit) == 3 && relativePath[len(relativePath)-1:] == "/" {
+				// template/language/
+
+				if !canWriteLanguage(language, overwrite) {
+					fmt.Printf("Directory %s exits, overwriting is not allowed\n", relativePath)
+					continue
+				}
+			} else {
+				// template/language/*
+
+				if !canWriteLanguage(language, overwrite) {
+					continue
+				}
+			}
+		} else {
+			// template/
 			continue
 		}
 
@@ -71,7 +80,7 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 			}
 
 			// If relativePath is just a directory, then skip expanding it.
-			if len(relativePath) > 1 && relativePath[len(relativePath)-1:] != string(os.PathSeparator) {
+			if len(relativePath) > 1 && relativePath[len(relativePath)-1:] != "/" {
 				if err = writeFile(rc, z.UncompressedSize64, relativePath, z.Mode()); err != nil {
 					break
 				}
@@ -134,7 +143,7 @@ func writeFile(rc io.ReadCloser, size uint64, relativePath string, perms os.File
 	var err error
 
 	defer rc.Close()
-	fmt.Printf("Writing %d bytes to %s.\n", size, relativePath)
+	fmt.Printf("Writing %d bytes to %s\n", size, relativePath)
 	f, err := os.OpenFile(relativePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
 	if err != nil {
 		return err
@@ -157,10 +166,10 @@ func canWriteLanguage(language string, overwrite bool) bool {
 		if _, ok := cache[language]; ok {
 			return cache[language]
 		}
-
 		dir := templateDirectory + language
+
 		if _, err := os.Stat(dir); err == nil && overwrite == false {
-			log.Printf("Directory %s exists, overwrite is not allowed\n", dir)
+			log.Printf("Directory %s exists, overwriting is not allowed\n", dir)
 			cache[language] = false
 		} else {
 			cache[language] = true
