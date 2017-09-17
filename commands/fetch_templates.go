@@ -58,7 +58,7 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 				// template/language/
 
 				if !canWriteLanguage(language, overwrite) {
-					fmt.Printf("Directory %s exits, overwriting is not allowed\n", relativePath)
+					fmt.Printf("Directory %s exists, overwriting is not allowed\n", relativePath)
 					continue
 				}
 			} else {
@@ -171,8 +171,8 @@ func canWriteLanguage(language string, overwrite bool) bool {
 		if _, ok := cacheCanWriteLanguage[language]; ok {
 			return cacheCanWriteLanguage[language]
 		}
-		dir := templateDirectory + language
 
+		dir := templateDirectory + language
 		if _, err := os.Stat(dir); err == nil {
 			// The directory template/language/ exists
 			if overwrite == false {

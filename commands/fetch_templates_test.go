@@ -39,8 +39,8 @@ func Test_PullTemplates(t *testing.T) {
 func tearDown_fetch_templates(t *testing.T) {
 
 	// Remove existing archive file if it exists
-	if _, err := os.Stat(".cache/template-owner-repo.zip"); err == nil {
-		t.Log("Found the archive file, removing it...")
+	if _, err := os.Stat(".cache/"); err == nil {
+		t.Log("Found a .cache/ directory, removing it...")
 
 		err := os.RemoveAll(".cache")
 		if err != nil {
