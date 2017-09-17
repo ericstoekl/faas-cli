@@ -110,7 +110,7 @@ func fetchMasterZip(templateURL string) (string, error) {
 
 	archive := fmt.Sprintf("%stemplate-%s.zip", cacheDirectory, templateRepository)
 
-	if _, err = os.Stat(archive); err != nil {
+	if _, err := os.Stat(archive); err != nil {
 		c := http.Client{}
 
 		req, err := http.NewRequest("GET", templateURL, nil)
