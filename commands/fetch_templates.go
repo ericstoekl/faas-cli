@@ -182,8 +182,8 @@ func canWriteLanguage(language string, overwrite bool) bool {
 				// Clean up the directory to keep in sync with new updates
 				if err := os.RemoveAll(dir); err != nil {
 					log.Fatalf("Directory %s cannot be removed", dir)
-					cacheCanWriteLanguage[language] = true
 				}
+				cacheCanWriteLanguage[language] = true
 			}
 		} else {
 			cacheCanWriteLanguage[language] = true
