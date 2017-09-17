@@ -19,7 +19,7 @@ const defaultTemplateRepository = "https://github.com/alexellis/faas-cli/archive
 const cacheDirectory = "./.cache/"
 const templateDirectory = "./template/"
 
-var cache = make(map[string]bool)
+var cacheCanWriteLanguage = make(map[string]bool)
 
 // fetchTemplates fetch code templates from GitHub master zip file.
 func fetchTemplates(templateURL string, overwrite bool) error {
@@ -28,9 +28,13 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 	} else {
 		templateURL = templateURL + "/archive/master.zip"
 	}
-	archive, err := fetchMasterZip(templateURL)
 
-	zipFile, err := zip.OpenReader("./" + archive)
+	archive, err := fetchMasterZip(templateURL)
+	if err != nil {
+		return err
+	}
+
+	zipFile, err := zip.OpenReader(archive)
 	if err != nil {
 		return err
 	}
@@ -104,7 +108,7 @@ func fetchMasterZip(templateURL string) (string, error) {
 	templateURLSplit = templateURLSplit[len(templateURLSplit)-4 : len(templateURLSplit)-2]
 	templateRepository := strings.Join(templateURLSplit, "-")
 
-	archive := fmt.Sprintf(cacheDirectory+"template-%s.zip", templateRepository)
+	archive := fmt.Sprintf("%stemplate-%s.zip", cacheDirectory, templateRepository)
 
 	if _, err = os.Stat(archive); err != nil {
 		c := http.Client{}
@@ -161,21 +165,31 @@ func createPath(relativePath string, perms os.FileMode) error {
 }
 
 // canWriteLanguage tells whether the language can be processed or not
+// if overwrite is activated, the directory template/language/ is removed before to keep it in sync
 func canWriteLanguage(language string, overwrite bool) bool {
 	if len(language) > 0 {
-		if _, ok := cache[language]; ok {
-			return cache[language]
+		if _, ok := cacheCanWriteLanguage[language]; ok {
+			return cacheCanWriteLanguage[language]
 		}
 		dir := templateDirectory + language
 
-		if _, err := os.Stat(dir); err == nil && overwrite == false {
-			log.Printf("Directory %s exists, overwriting is not allowed\n", dir)
-			cache[language] = false
+		if _, err := os.Stat(dir); err == nil {
+			// The directory template/language/ exists
+			if overwrite == false {
+				log.Printf("Directory %s exists, overwriting is not allowed\n", dir)
+				cacheCanWriteLanguage[language] = false
+			} else {
+				// Clean up the directory to keep in sync with new updates
+				if err := os.RemoveAll(dir); err != nil {
+					log.Fatalf("Directory %s cannot be removed", dir)
+					cacheCanWriteLanguage[language] = true
+				}
+			}
 		} else {
-			cache[language] = true
+			cacheCanWriteLanguage[language] = true
 		}
 
-		return cache[language]
+		return cacheCanWriteLanguage[language]
 	}
 
 	return false

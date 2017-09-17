@@ -15,6 +15,8 @@ import (
 )
 
 func Test_addTemplate(t *testing.T) {
+	defer tearDown(t)
+
 	ts := httpTestServer(t)
 	defer ts.Close()
 
@@ -22,32 +24,17 @@ func Test_addTemplate(t *testing.T) {
 	faasCmd.SetArgs([]string{"add-template", repository})
 	faasCmd.Execute()
 
-	// Remove existing master.zip file if it exists
-	if _, err := os.Stat(".cache/template-owner-repo.zip"); err == nil {
-		t.Log("Found the archive file, removing it...")
-
-		err := os.RemoveAll(".cache")
-		if err != nil {
-			t.Fatal(err)
+	// Verify created directories
+	for _, dir := range []string{".cache", "template"} {
+		if _, err := os.Stat(dir); err != nil {
+			t.Fatalf("The directory %s was not created", dir)
 		}
-	} else {
-		t.Fatalf("The archive was not downloaded: %s", err)
-	}
-
-	// Remove existing templates folder, if it exist
-	if _, err := os.Stat("template/"); err == nil {
-		t.Log("Found a template/ directory, removing it...")
-
-		err := os.RemoveAll("template/")
-		if err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		t.Fatalf("Directory template was not created: %s", err)
 	}
 }
 
 func Test_addTemplate_with_overwriting(t *testing.T) {
+	defer tearDown(t)
+
 	ts := httpTestServer(t)
 	defer ts.Close()
 
@@ -55,8 +42,8 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	faasCmd.SetArgs([]string{"add-template", repository})
 	faasCmd.Execute()
 
-	// reset cache
-	cache = make(map[string]bool)
+	// reset cacheCanWriteLanguage
+	cacheCanWriteLanguage = make(map[string]bool)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
@@ -66,8 +53,8 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	faasCmd.SetArgs([]string{"add-template", repository})
 	faasCmd.Execute()
 
-	// reset cache
-	cache = make(map[string]bool)
+	// reset cacheCanWriteLanguage
+	cacheCanWriteLanguage = make(map[string]bool)
 
 	if !r.MatchString(buf.String()) {
 		t.Fatal(buf.String())
@@ -82,28 +69,11 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 		t.Fatal()
 	}
 
-	// Remove existing master.zip file if it exists
-	if _, err := os.Stat(".cache/template-owner-repo.zip"); err == nil {
-		t.Log("Found the archive file, removing it...")
-
-		err := os.RemoveAll(".cache")
-		if err != nil {
-			t.Fatal(err)
+	// Verify created directories
+	for _, dir := range []string{".cache", "template"} {
+		if _, err := os.Stat(dir); err != nil {
+			t.Fatalf("The directory %s was not created", dir)
 		}
-	} else {
-		t.Fatalf("The archive was not downloaded: %s", err)
-	}
-
-	// Remove existing templates folder, if it exist
-	if _, err := os.Stat("template/"); err == nil {
-		t.Log("Found a template/ directory, removing it...")
-
-		err := os.RemoveAll("template/")
-		if err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		t.Fatalf("Directory template was not created: %s", err)
 	}
 }
 
@@ -131,6 +101,7 @@ func Test_addTemplate_error_not_valid_url(t *testing.T) {
 	}
 }
 
+// httpTestServer returns a testing http server
 func httpTestServer(t *testing.T) *httptest.Server {
 	const sampleMasterZipPath string = "testdata/master_test.zip"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -148,4 +119,32 @@ func httpTestServer(t *testing.T) *httptest.Server {
 	}))
 
 	return ts
+}
+
+// tearDown cleans all files and directories created by the test
+func tearDown(t *testing.T) {
+
+	// Remove existing archive file if it exists
+	if _, err := os.Stat(".cache/template-owner-repo.zip"); err == nil {
+		t.Log("Found the archive file, removing it...")
+
+		err := os.RemoveAll(".cache")
+		if err != nil {
+			t.Log(err)
+		}
+	} else {
+		t.Log("The archive was not downloaded: %s", err)
+	}
+
+	// Remove existing templates folder, if it exist
+	if _, err := os.Stat("template/"); err == nil {
+		t.Log("Found a template/ directory, removing it...")
+
+		err := os.RemoveAll("template/")
+		if err != nil {
+			t.Log(err)
+		}
+	} else {
+		t.Log("Directory template was not created: %s", err)
+	}
 }
