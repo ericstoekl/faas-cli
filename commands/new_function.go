@@ -10,12 +10,14 @@ import (
 
 	"github.com/morikuni/aec"
 	"github.com/openfaas/faas-cli/builder"
+	"github.com/openfaas/faas-cli/stack"
 	"github.com/spf13/cobra"
 )
 
 var (
-	lang string
-	list bool
+	append string
+	lang   string
+	list   bool
 )
 
 func init() {
@@ -23,6 +25,7 @@ func init() {
 	newFunctionCmd.Flags().StringVar(&lang, "lang", "", "Language or template to use")
 	newFunctionCmd.Flags().StringVar(&gateway, "gateway", defaultGateway,
 		"Gateway URL to store in YAML stack file")
+	newFunctionCmd.Flags().StringVar(&append, "append", "", "Existing YAML file to add new function to")
 
 	newFunctionCmd.Flags().BoolVar(&list, "list", false, "List available languages")
 
@@ -46,11 +49,11 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 		fmt.Printf(`Languages available as templates:
 - node
 - python
+- python3
 - ruby
 - csharp
+- Dockerfile
 
-Or alternatively create a folder and a new Dockerfile, then pick
-the "Dockerfile" lang type in your YAML file.
 `)
 		return
 	}
@@ -64,6 +67,19 @@ the "Dockerfile" lang type in your YAML file.
 		return
 	}
 
+	var stackFileName string
+	if len(append) == 0 {
+		// We will create a new YAML file for this function
+		stackFileName = functionName + ".yml"
+	} else {
+		// YAML file was passed in, so parse to see if it is valid
+		if _, err := stack.ParseYAMLFile(append, "", ""); err != nil {
+			fmt.Printf("Specified file (" + append + ") is not valid YAML\n")
+			return
+		}
+		stackFileName = append
+	}
+
 	PullTemplates("")
 
 	if _, err := os.Stat(functionName); err == nil {
@@ -75,13 +91,35 @@ the "Dockerfile" lang type in your YAML file.
 		fmt.Printf("Folder: %s created.\n", functionName)
 	}
 
-	builder.CopyFiles("./template/"+lang+"/function/", "./"+functionName+"/", true)
+	if lang != "Dockerfile" && lang != "dockerfile" {
+		builder.CopyFiles("./template/"+lang+"/function/", "./"+functionName+"/", true)
+	} else {
+		if _, err := os.Create("./" + functionName + "/Dockerfile"); err != nil {
+			fmt.Printf("Couldn't create Dockerfile")
+			return
+		}
+	}
 
-	stack := `provider:
+	var outFile string
+	if len(append) == 0 {
+
+		outFile = `provider:
   name: faas
   gateway: ` + gateway + `
 
 functions:
+  `
+
+	} else {
+		bytes, err := ioutil.ReadFile(stackFileName)
+		outFile = string(bytes[:])
+		if err != nil {
+			fmt.Printf("Error reading file %s: %v", stackFileName, err)
+			return
+		}
+	}
+
+	outFile += `
   ` + functionName + `:
     lang: ` + lang + `
     handler: ./` + functionName + `
@@ -92,12 +130,27 @@ functions:
 	fmt.Println()
 	fmt.Printf("Function created in folder: %s\n", functionName)
 
-	stackWriteErr := ioutil.WriteFile("./"+functionName+".yml", []byte(stack), 0600)
+	stackWriteErr := ioutil.WriteFile(stackFileName, []byte(outFile), 0600)
+
 	if stackWriteErr != nil {
-		fmt.Printf("Error writing stack file %s\n", stackWriteErr)
+		fmt.Printf("Error writing stack file %v\n", stackWriteErr)
 	} else {
-		fmt.Printf("Stack file written: %s\n", functionName+".yml")
+		fmt.Printf("Stack file written: %s\n", stackFileName)
 	}
 
 	return
+}
+
+func AppendStringToFile(path, text string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	if err != nil {
+		return err
+	}
+	return nil
 }
