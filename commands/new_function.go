@@ -14,9 +14,8 @@ import (
 )
 
 var (
-	appendYaml string
-	lang       string
-	list       bool
+	lang string
+	list bool
 )
 
 func init() {
@@ -25,7 +24,6 @@ func init() {
 	newFunctionCmd.Flags().StringVar(&gateway, "gateway", defaultGateway,
 		"Gateway URL to store in YAML stack file")
 	newFunctionCmd.Flags().StringVar(&image, "image", "", "Name for docker image")
-	newFunctionCmd.Flags().StringVar(&appendYaml, "append", "", "Existing YAML file to add new function to")
 
 	newFunctionCmd.Flags().BoolVar(&list, "list", false, "List available languages")
 
@@ -69,19 +67,19 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 
 	var stackFileName string
 	var services stack.Services
-	if len(appendYaml) == 0 {
+	if len(yamlFile) == 0 {
 		// We will create a new YAML file for this function
 		stackFileName = functionName + ".yml"
 	} else {
 		// YAML file was passed in, so parse to see if it is valid
-		parsedServices, err := stack.ParseYAMLFile(appendYaml, "", "")
+		parsedServices, err := stack.ParseYAMLFile(yamlFile, "", "")
 		if err != nil {
-			fmt.Printf("Specified file (" + appendYaml + ") is not valid YAML\n")
+			fmt.Printf("Specified file (" + yamlFile + ") is not valid YAML\n")
 			return
 		}
 		services = *parsedServices
 
-		stackFileName = appendYaml
+		stackFileName = yamlFile
 	}
 
 	PullTemplates("")
@@ -104,7 +102,7 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if len(appendYaml) == 0 {
+	if len(yamlFile) == 0 {
 		services.Provider = stack.Provider{Name: "faas", GatewayURL: gateway}
 		services.Functions = make(map[string]stack.Function)
 	}
