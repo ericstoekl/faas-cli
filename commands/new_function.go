@@ -5,7 +5,6 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/morikuni/aec"
@@ -15,9 +14,9 @@ import (
 )
 
 var (
-	append string
-	lang   string
-	list   bool
+	appendYaml string
+	lang       string
+	list       bool
 )
 
 func init() {
@@ -25,7 +24,8 @@ func init() {
 	newFunctionCmd.Flags().StringVar(&lang, "lang", "", "Language or template to use")
 	newFunctionCmd.Flags().StringVar(&gateway, "gateway", defaultGateway,
 		"Gateway URL to store in YAML stack file")
-	newFunctionCmd.Flags().StringVar(&append, "append", "", "Existing YAML file to add new function to")
+	newFunctionCmd.Flags().StringVar(&image, "image", "", "Name for docker image")
+	newFunctionCmd.Flags().StringVar(&appendYaml, "append", "", "Existing YAML file to add new function to")
 
 	newFunctionCmd.Flags().BoolVar(&list, "list", false, "List available languages")
 
@@ -68,16 +68,20 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 	}
 
 	var stackFileName string
-	if len(append) == 0 {
+	var services stack.Services
+	if len(appendYaml) == 0 {
 		// We will create a new YAML file for this function
 		stackFileName = functionName + ".yml"
 	} else {
 		// YAML file was passed in, so parse to see if it is valid
-		if _, err := stack.ParseYAMLFile(append, "", ""); err != nil {
-			fmt.Printf("Specified file (" + append + ") is not valid YAML\n")
+		parsedServices, err := stack.ParseYAMLFile(appendYaml, "", "")
+		if err != nil {
+			fmt.Printf("Specified file (" + appendYaml + ") is not valid YAML\n")
 			return
 		}
-		stackFileName = append
+		services = *parsedServices
+
+		stackFileName = appendYaml
 	}
 
 	PullTemplates("")
@@ -100,37 +104,22 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var outFile string
-	if len(append) == 0 {
-
-		outFile = `provider:
-  name: faas
-  gateway: ` + gateway + `
-
-functions:
-  `
-
-	} else {
-		bytes, err := ioutil.ReadFile(stackFileName)
-		outFile = string(bytes[:])
-		if err != nil {
-			fmt.Printf("Error reading file %s: %v", stackFileName, err)
-			return
-		}
+	if len(appendYaml) == 0 {
+		services.Provider = stack.Provider{Name: "faas", GatewayURL: gateway}
+		services.Functions = make(map[string]stack.Function)
 	}
 
-	outFile += `
-  ` + functionName + `:
-    lang: ` + lang + `
-    handler: ./` + functionName + `
-    image: ` + functionName + `
-`
+	if len(image) > 0 {
+		services.Functions[functionName] = stack.Function{Language: lang, Image: image, Handler: "./" + functionName}
+	} else {
+		services.Functions[functionName] = stack.Function{Language: lang, Image: functionName, Handler: "./" + functionName}
+	}
 
 	fmt.Printf(aec.BlueF.Apply(figletStr))
 	fmt.Println()
 	fmt.Printf("Function created in folder: %s\n", functionName)
 
-	stackWriteErr := ioutil.WriteFile(stackFileName, []byte(outFile), 0600)
+	stackWriteErr := stack.WriteYAMLData(&services, stackFileName)
 
 	if stackWriteErr != nil {
 		fmt.Printf("Error writing stack file %v\n", stackWriteErr)
