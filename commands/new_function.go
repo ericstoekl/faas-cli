@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/morikuni/aec"
-	"github.com/openfaas/faas-cli/builder"
 	"github.com/openfaas/faas-cli/stack"
+	"github.com/openfaas/faas-cli/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -115,7 +115,7 @@ the "Dockerfile" lang type in your YAML file.
 
 	// Only "template" language templates - Dockerfile must be custom, so start with empty directory.
 	if strings.ToLower(lang) != "dockerfile" {
-		builder.CopyFiles("./template/"+lang+"/function/", "./"+functionName+"/", true)
+		utils.CopyFiles("./template/"+lang+"/function/", "./"+functionName+"/", true)
 	} else {
 		ioutil.WriteFile("./"+functionName+"/Dockerfile", []byte(`# Use any image as your base image, or "scratch"
 # Add fwatchdog binary via https://github.com/openfaas/faas/releases/

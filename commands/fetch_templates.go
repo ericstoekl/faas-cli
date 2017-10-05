@@ -55,6 +55,7 @@ func fetchTemplates(templateUrl string) error {
 
 	log.Printf("Cleaning up zip file...")
 	if _, err := os.Stat(ZipFileName); err == nil {
+		zipFile.Close()
 		os.Remove(ZipFileName)
 	} else {
 		return err

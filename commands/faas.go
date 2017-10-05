@@ -30,6 +30,21 @@ var (
 	language     string
 )
 
+func reset() {
+	// global
+	yamlFile = ""
+	regex = ""
+	filter = ""
+	// subcommands
+	fprocess = ""
+	functionName = ""
+	network = defaultNetwork
+	gateway = defaultGateway
+	handler = ""
+	image = ""
+	language = ""
+}
+
 func init() {
 	faasCmd.PersistentFlags().StringVarP(&yamlFile, "yaml", "f", "", "Path to YAML file describing function(s)")
 	faasCmd.PersistentFlags().StringVarP(&regex, "regex", "", "", "Regex to match with function names in YAML file")

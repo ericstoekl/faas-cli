@@ -6,8 +6,11 @@ import (
 	"regexp"
 	"testing"
 
+	"io/ioutil"
+
 	"github.com/openfaas/faas-cli/stack"
 	"github.com/openfaas/faas-cli/test"
+	"github.com/openfaas/faas-cli/utils"
 )
 
 const SuccessMsg = `(?m:Function created in folder)`
@@ -84,7 +87,7 @@ func runNewFunctionTest(t *testing.T, nft NewFunctionTest) {
 		funcYAML = funcName + ".yml"
 	} else {
 		funcYAML = nft.file
-		test.Copy(funcYAML, originalYAMLFile)
+		utils.Copy(funcYAML, originalYAMLFile)
 	}
 
 	// Cleanup the created directory
@@ -93,7 +96,7 @@ func runNewFunctionTest(t *testing.T, nft NewFunctionTest) {
 		if len(nft.file) == 0 {
 			os.Remove(funcYAML)
 		} else {
-			test.Copy(originalYAMLFile, funcYAML)
+			utils.Copy(originalYAMLFile, funcYAML)
 			os.Remove(originalYAMLFile)
 		}
 	}()
@@ -135,29 +138,33 @@ func runNewFunctionTest(t *testing.T, nft NewFunctionTest) {
 		}
 		services := *parsedServices
 
-		var testServices stack.Services
-		testServices.Provider = stack.Provider{Name: "faas", GatewayURL: "http://localhost:8080"}
-		if !reflect.DeepEqual(services.Provider, testServices.Provider) {
-			t.Fatalf("YAML `provider` section was not created correctly for file %s: got %v", funcYAML, services.Provider)
+		var expectedServices stack.Services
+		expectedServices.Provider = stack.Provider{Name: "faas", GatewayURL: "http://localhost:8080"}
+		if !reflect.DeepEqual(services.Provider, expectedServices.Provider) {
+			var yaml []byte
+			yaml, _ = ioutil.ReadFile(funcYAML)
+			t.Fatalf("YAML `provider` section was not created correctly for file %s: got %v\nYaml:\n%s", funcYAML, services.Provider, string(yaml))
 		}
 
-		testServices.Functions = make(map[string]stack.Function)
-		testServices.Functions[funcName] = stack.Function{Language: funcLang, Image: funcName, Handler: "./" + funcName}
-		if !reflect.DeepEqual(services.Functions[funcName], testServices.Functions[funcName]) {
-			t.Fatalf("YAML `functions` section was not created correctly for file %s, got %v", funcYAML, services.Functions[funcName])
+		expectedServices.Functions = make(map[string]stack.Function)
+		expectedServices.Functions[funcName] = stack.Function{Language: funcLang, Image: funcName, Handler: "./" + funcName}
+		if !reflect.DeepEqual(services.Functions[funcName], expectedServices.Functions[funcName]) {
+			var yaml []byte
+			yaml, _ = ioutil.ReadFile(funcYAML)
+			t.Fatalf("YAML `functions` section was not created correctly for file %s, got %v\nYaml:\n%s", funcYAML, services.Functions[funcName], string(yaml))
 		}
 	}
 
 }
 
 func Test_newFunctionTests(t *testing.T) {
-
 	// Change directory to testdata
 	if err := os.Chdir("testdata/new_function"); err != nil {
 		t.Fatalf("Error on cd to testdata dir: %v", err)
 	}
 
 	for _, test := range NewFunctionTests {
+		reset()
 		t.Run(test.title, func(t *testing.T) {
 			runNewFunctionTest(t, test)
 		})
