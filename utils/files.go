@@ -6,10 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 // CopyFiles copies files from src to destination, optionally recursively.
 func CopyFiles(src string, destination string, recursive bool) {
+	if strings.LastIndex(destination, "/") != len(destination)-1 {
+		log.Fatalf("destination '%s' must have a trailing slash", destination)
+	}
 
 	files, err := ioutil.ReadDir(src)
 	if err != nil {
