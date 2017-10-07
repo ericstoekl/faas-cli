@@ -18,7 +18,7 @@ import (
 
 const (
 	repositoryRegexpMockedServer = `^http://127.0.0.1:\d+/([a-z0-9-]+)/([a-z0-9-]+)$`
-	repositoryRegexpGithub       = `^https://github.com/([a-z0-9-]+)/([a-z0-9-]+)$`
+	repositoryRegexpGithub       = `^https://github.com/([a-z0-9-]+)/([a-z0-9-]+)/?$`
 )
 
 var (
@@ -36,9 +36,7 @@ func init() {
 var addTemplateCmd = &cobra.Command{
 	Use: "add-template <repository URL>",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return errors.New("A repository URL must be specified")
-		} else {
+		if len(args) > 0 {
 			var validURL = regexp.MustCompile(repositoryRegexpGithub + "|" + repositoryRegexpMockedServer)
 
 			if !validURL.MatchString(args[0]) {
@@ -55,9 +53,12 @@ var addTemplateCmd = &cobra.Command{
 }
 
 func runAddTemplate(cmd *cobra.Command, args []string) {
-	repository = args[0]
+	repository := ""
+	if len(args) > 0 {
+		repository = args[0]
+	}
 
-	fmt.Println("Get " + repository)
+	fmt.Println("Fetch templates from repository: " + repository)
 	if err := fetchTemplates(repository, overwrite); err != nil {
 		fmt.Println(err)
 

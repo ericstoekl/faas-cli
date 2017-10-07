@@ -46,7 +46,7 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	r := regexp.MustCompile(`(?m:overwriting is not allowed)`)
+	r := regexp.MustCompile(`(?m:Cannot overwrite the following \(\d+\) directories:)`)
 
 	faasCmd.SetArgs([]string{"add-template", repository})
 	faasCmd.Execute()
@@ -73,14 +73,15 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	}
 }
 
-func Test_addTemplate_error_no_arg(t *testing.T) {
+func Test_addTemplate_no_arg(t *testing.T) {
+	defer tearDown_fetch_templates(t)
 	var buf bytes.Buffer
 
 	faasCmd.SetArgs([]string{"add-template"})
 	faasCmd.SetOutput(&buf)
 	faasCmd.Execute()
 
-	if !strings.Contains(buf.String(), "Error: A repository URL must be specified") {
+	if strings.Contains(buf.String(), "Error: A repository URL must be specified") {
 		t.Fatal("Output does not contain the required string")
 	}
 }
@@ -131,7 +132,17 @@ func Test_repositoryUrlRegExp(t *testing.T) {
 		t.Errorf("Url %s must not end with .git or must start with https", url)
 	}
 
+	url = "https://github.com/owner/repo//"
+	if r.MatchString(url) {
+		t.Errorf("Url %s must end with no or one slash", url)
+	}
+
 	url = "https://github.com/owner/repo"
+	if !r.MatchString(url) {
+		t.Errorf("Url %s must be valid", url)
+	}
+
+	url = "https://github.com/owner/repo/"
 	if !r.MatchString(url) {
 		t.Errorf("Url %s must be valid", url)
 	}

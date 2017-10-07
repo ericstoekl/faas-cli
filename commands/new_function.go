@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/morikuni/aec"
 	"github.com/openfaas/faas-cli/builder"
+	"github.com/openfaas/faas-cli/stack"
 	"github.com/spf13/cobra"
 )
 
@@ -73,7 +73,7 @@ the "Dockerfile" lang type in your YAML file.
 
 	PullTemplates()
 
-	if validTemplate(lang) == false {
+	if stack.IsValidTemplate(lang) == false {
 		fmt.Printf("%s is unavailable or not supported.\n", lang)
 	}
 
@@ -124,16 +124,4 @@ functions:
 	}
 
 	return
-}
-
-func validTemplate(lang string) bool {
-	var found bool
-	if strings.ToLower(lang) != "dockerfile" {
-		found = true
-	}
-	if _, err := os.Stat(path.Join("./template/", lang)); err == nil {
-		found = true
-	}
-
-	return found
 }

@@ -24,6 +24,13 @@ var cacheCanWriteLanguage = make(map[string]bool)
 
 // fetchTemplates fetch code templates from GitHub master zip file.
 func fetchTemplates(templateURL string, overwrite bool) error {
+	var existingLanguages []string
+	countFetchedTemplates := 0
+
+	if len(templateURL) == 0 {
+		templateURL = defaultTemplateRepository
+	}
+
 	archive, err := fetchMasterZip(templateURL)
 	if err != nil {
 		return err
@@ -53,9 +60,10 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 				// template/language/
 
 				if !canWriteLanguage(language, overwrite) {
-					fmt.Printf("Directory %s exists, overwriting is not allowed\n", relativePath)
+					existingLanguages = append(existingLanguages, language)
 					continue
 				}
+				countFetchedTemplates++
 			} else {
 				// template/language/*
 
@@ -68,29 +76,31 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 			continue
 		}
 
-		if strings.Index(relativePath, "template") == 0 {
-			fmt.Printf("Found \"%s\"\n", relativePath)
-			if rc, err = z.Open(); err != nil {
-				break
-			}
+		if rc, err = z.Open(); err != nil {
+			break
+		}
 
-			if err = createPath(relativePath, z.Mode()); err != nil {
-				break
-			}
+		if err = createPath(relativePath, z.Mode()); err != nil {
+			break
+		}
 
-			// If relativePath is just a directory, then skip expanding it.
-			if len(relativePath) > 1 && relativePath[len(relativePath)-1:] != "/" {
-				if err = writeFile(rc, z.UncompressedSize64, relativePath, z.Mode()); err != nil {
-					break
-				}
+		// If relativePath is just a directory, then skip expanding it.
+		if len(relativePath) > 1 && relativePath[len(relativePath)-1:] != "/" {
+			if err = writeFile(rc, z.UncompressedSize64, relativePath, z.Mode()); err != nil {
+				break
 			}
 		}
 	}
 
+	if len(existingLanguages) > 0 {
+		log.Printf("Cannot overwrite the following (%d) directories: %v\n", len(existingLanguages), existingLanguages)
+	}
+
 	zipFile.Close()
 
+	log.Printf("Fetched %d template(s) from %s\n", countFetchedTemplates, templateURL)
+
 	err = removeArchive(archive)
-	fmt.Println("")
 
 	return err
 }
@@ -107,10 +117,6 @@ func removeArchive(archive string) error {
 // fetchMasterZip downloads a zip file from a repository URL
 func fetchMasterZip(templateURL string) (string, error) {
 	var err error
-
-	if len(templateURL) == 0 {
-		templateURL = defaultTemplateRepository
-	}
 
 	templateURL = strings.TrimRight(templateURL, "/")
 	templateURL = templateURL + "/archive/master.zip"
@@ -159,7 +165,6 @@ func writeFile(rc io.ReadCloser, size uint64, relativePath string, perms os.File
 	var err error
 
 	defer rc.Close()
-	fmt.Printf("Writing %d bytes to %s\n", size, relativePath)
 	f, err := os.OpenFile(relativePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perms)
 	if err != nil {
 		return err
@@ -179,6 +184,7 @@ func createPath(relativePath string, perms os.FileMode) error {
 // canWriteLanguage tells whether the language can be processed or not
 // if overwrite is activated, the directory template/language/ is removed before to keep it in sync
 func canWriteLanguage(language string, overwrite bool) bool {
+
 	if len(language) > 0 {
 		if _, ok := cacheCanWriteLanguage[language]; ok {
 			return cacheCanWriteLanguage[language]
@@ -188,7 +194,6 @@ func canWriteLanguage(language string, overwrite bool) bool {
 		if _, err := os.Stat(dir); err == nil {
 			// The directory template/language/ exists
 			if overwrite == false {
-				log.Printf("Directory %s exists, overwriting is not allowed\n", dir)
 				cacheCanWriteLanguage[language] = false
 			} else {
 				// Clean up the directory to keep in sync with new updates

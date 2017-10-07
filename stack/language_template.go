@@ -6,6 +6,8 @@ package stack
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -28,4 +30,16 @@ func ParseYAMLForLanguageTemplate(yamlFile string) (*LanguageTemplate, error) {
 	}
 
 	return &langTemplate, err
+}
+
+func IsValidTemplate(lang string) bool {
+	var found bool
+	if strings.ToLower(lang) == "dockerfile" {
+		found = true
+	}
+	if _, err := os.Stat("./template/" + lang); err == nil {
+		found = true
+	}
+
+	return found
 }
