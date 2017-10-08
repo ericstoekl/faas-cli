@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -129,4 +130,13 @@ func CaptureStdout(f func()) string {
 	io.Copy(&b, r)
 
 	return b.String()
+}
+
+func Backtrace() (f *runtime.Func, file string, line int) {
+	pc := make([]uintptr, 1)
+	if runtime.Callers(2, pc) > 0 {
+		f = runtime.FuncForPC(pc[0])
+		file, line = f.FileLine(pc[0])
+	}
+	return
 }

@@ -44,6 +44,6 @@ type Services struct {
 }
 
 type LanguageTemplate struct {
-	Language string `yaml:"lang"`
+	Language string `yaml:"language"`
 	FProcess string `yaml:"fprocess"`
 }
