@@ -45,14 +45,20 @@ language or type in --list for a list of languages available.`,
 
 func runNewFunction(cmd *cobra.Command, args []string) {
 	if list == true {
+		var available_templates string
+
+		if f, err := ioutil.ReadDir(templateDirectory); err != nil {
+			available_templates = "There is no available languages"
+		} else {
+			for _, file := range f {
+				if file.IsDir() {
+					available_templates += fmt.Sprintf("- %s\n", file.Name())
+				}
+			}
+		}
+
 		fmt.Printf(`Languages available as templates:
-- node
-- python
-- python3
-- ruby
-- csharp
-- Dockerfile
-- go
+` + available_templates + `
 
 Or alternatively create a folder containing a Dockerfile, then pick
 the "Dockerfile" lang type in your YAML file.
@@ -75,6 +81,7 @@ the "Dockerfile" lang type in your YAML file.
 
 	if stack.IsValidTemplate(lang) == false {
 		fmt.Printf("%s is unavailable or not supported.\n", lang)
+		return
 	}
 
 	if _, err := os.Stat(functionName); err == nil {
