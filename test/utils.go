@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"runtime"
 	"testing"
 )
 
@@ -132,11 +131,24 @@ func CaptureStdout(f func()) string {
 	return b.String()
 }
 
-func Backtrace() (f *runtime.Func, file string, line int) {
-	pc := make([]uintptr, 1)
-	if runtime.Callers(2, pc) > 0 {
-		f = runtime.FuncForPC(pc[0])
-		file, line = f.FileLine(pc[0])
+// Copy the src file to dst. Any existing file will be overwritten and will not
+// copy file attributes.
+func Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
 	}
-	return
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
