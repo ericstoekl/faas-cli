@@ -64,7 +64,7 @@ type Function struct {
 	Image           string  `json:"image"`
 	InvocationCount float64 `json:"invocationCount"` // TODO: shouldn't this be int64?
 	Replicas        uint64  `json:"replicas"`
-	Available       bool    `json:"available"`
+	AvailableCount  int     `json:"availableCount"`
 	EnvProcess      string  `json:"envProcess"`
 }
 
