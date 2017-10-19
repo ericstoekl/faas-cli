@@ -71,9 +71,9 @@ func runList(cmd *cobra.Command, args []string) {
 			fmt.Printf("%-30s\t%-40s\t%-15d\t%-5d\n", function.Name, functionImage, int64(function.InvocationCount), function.Replicas)
 		}
 	} else {
-		fmt.Printf("%-30s\t%-15s\t%-5s\n", "Function", "Invocations", "Replicas")
+		fmt.Printf("%-30s\t%-15s\t%-5s\t%-5s\n", "Function", "Invocations", "Replicas", "Available")
 		for _, function := range functions {
-			fmt.Printf("%-30s\t%-15d\t%-5d\n", function.Name, int64(function.InvocationCount), function.Replicas)
+			fmt.Printf("%-30s\t%-15d\t%-15d\t%-15t\n", function.Name, int64(function.InvocationCount), function.Replicas, function.Available)
 
 		}
 	}
