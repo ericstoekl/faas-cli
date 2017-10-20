@@ -55,7 +55,7 @@ func runList(cmd *cobra.Command, args []string) {
 	gatewayAddress = getGatewayURL(gateway, defaultGateway, yamlGateway)
 
 	// fmt.Println(gatewayAddress)
-	functions, err := proxy.ListFunctions(gatewayAddress)
+	functions, err := proxy.ListFunctions(gatewayAddress, verboseList)
 	if err != nil {
 		log.Println(err)
 		return
@@ -68,12 +68,12 @@ func runList(cmd *cobra.Command, args []string) {
 			if len(function.Image) > 40 {
 				functionImage = functionImage[0:38] + ".."
 			}
-			fmt.Printf("%-30s\t%-40s\t%-15d\t%-5d\n", function.Name, functionImage, int64(function.InvocationCount), function.Replicas)
+			fmt.Printf("%-30s\t%-40s\t%-15d\t%d/%d\n", function.Name, functionImage, int64(function.InvocationCount), function.AvailableCount, function.Replicas)
 		}
 	} else {
-		fmt.Printf("%-30s\t%-15s\t%-5s\n", "Function", "Invocations", "Replicas")
+		fmt.Printf("%-30s\t%-15s\n", "Function", "Invocations")
 		for _, function := range functions {
-			fmt.Printf("%-30s\t%-15d\t%d/%d\n", function.Name, int64(function.InvocationCount), function.AvailableCount, function.Replicas)
+			fmt.Printf("%-30s\t%-15d\n", function.Name, int64(function.InvocationCount))
 
 		}
 	}
