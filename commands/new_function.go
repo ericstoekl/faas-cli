@@ -47,10 +47,10 @@ func runNewFunction(cmd *cobra.Command, args []string) {
 	if list == true {
 		var available_templates string
 
-		if f, err := ioutil.ReadDir(templateDirectory); err != nil {
-			available_templates = "There is no available languages"
+		if templateFolders, err := ioutil.ReadDir(templateDirectory); err != nil {
+			available_templates = "No language templates were found. Please run 'faas-cli template pull'."
 		} else {
-			for _, file := range f {
+			for _, file := range templateFolders {
 				if file.IsDir() {
 					available_templates += fmt.Sprintf("- %s\n", file.Name())
 				}

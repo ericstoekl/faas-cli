@@ -89,7 +89,7 @@ func Test_addTemplate_no_arg(t *testing.T) {
 func Test_addTemplate_error_not_valid_url(t *testing.T) {
 	var buf bytes.Buffer
 
-	faasCmd.SetArgs([]string{"template", "pull", "git@github.com:alexellis/faas-cli.git"})
+	faasCmd.SetArgs([]string{"template", "pull", "git@github.com:openfaas/faas-cli.git"})
 	faasCmd.SetOutput(&buf)
 	faasCmd.Execute()
 
