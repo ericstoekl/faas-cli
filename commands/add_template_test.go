@@ -46,7 +46,7 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	r := regexp.MustCompile(`(?m:Cannot overwrite the following \(\d+\) directories:)`)
+	r := regexp.MustCompile(`(?m:Cannot overwrite the following \d+ directories:)`)
 
 	faasCmd.SetArgs([]string{"template", "pull", repository})
 	faasCmd.Execute()

@@ -5,6 +5,7 @@ package commands
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,7 +29,7 @@ var cacheCanWriteLanguage = make(map[string]bool)
 // fetchTemplates fetch code templates from GitHub master zip file.
 func fetchTemplates(templateURL string, overwrite bool) error {
 	var existingLanguages []string
-	countFetchedTemplates := 0
+	var fetchedTemplates []string
 
 	if len(templateURL) == 0 {
 		templateURL = defaultTemplateRepository
@@ -36,6 +37,7 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 
 	archive, err := fetchMasterZip(templateURL)
 	if err != nil {
+		removeArchive(archive)
 		return err
 	}
 
@@ -66,7 +68,7 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 					existingLanguages = append(existingLanguages, language)
 					continue
 				}
-				countFetchedTemplates++
+				fetchedTemplates = append(fetchedTemplates, language)
 			} else {
 				// template/language/*
 
@@ -96,18 +98,19 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 	}
 
 	if len(existingLanguages) > 0 {
-		log.Printf("Cannot overwrite the following (%d) directories: %v\n", len(existingLanguages), existingLanguages)
+		log.Printf("Cannot overwrite the following %d directories: %v\n", len(existingLanguages), existingLanguages)
 	}
 
 	zipFile.Close()
 
-	log.Printf("Fetched %d template(s) from %s\n", countFetchedTemplates, templateURL)
+	log.Printf("Fetched %d template(s) : %v from %s\n", len(fetchedTemplates), fetchedTemplates, templateURL)
 
 	err = removeArchive(archive)
 
 	return err
 }
 
+// removeArchive removes the given file
 func removeArchive(archive string) error {
 	log.Printf("Cleaning up zip file...")
 	if _, err := os.Stat(archive); err == nil {
@@ -137,6 +140,11 @@ func fetchMasterZip(templateURL string) (string, error) {
 		log.Printf("HTTP GET %s\n", templateURL)
 		res, err := client.Do(req)
 		if err != nil {
+			log.Println(err.Error())
+			return "", err
+		}
+		if res.StatusCode != http.StatusOK {
+			err := errors.New(fmt.Sprintf("%s is not valid, status code %d", templateURL, res.StatusCode))
 			log.Println(err.Error())
 			return "", err
 		}

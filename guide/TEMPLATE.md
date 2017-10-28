@@ -43,11 +43,11 @@ template
 In order to build functions using 3rd party templates, you need to add 3rd templates before the build step, with the following command:
 
 ```
-./faas-cli add-template https://github.com/openfaas/faas-cli
+./faas-cli template pull https://github.com/openfaas/faas-cli
 ```
 
 If you need to update the downloaded repository, just add the flag `--overwrite` to the download command:
 
 ```
-./faas-cli add-template https://github.com/openfaas/faas-cli --override
+./faas-cli template pull https://github.com/openfaas/faas-cli --overwrite
 ```
