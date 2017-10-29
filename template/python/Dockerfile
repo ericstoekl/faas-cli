@@ -1,5 +1,7 @@
 FROM python:2.7-alpine
 
+RUN adduser app -D
+
 # Alternatively use ADD https:// (which will not be cached by Docker builder)
 RUN apk --no-cache add curl \ 
     && echo "Pulling watchdog binary from Github." \
@@ -27,7 +29,6 @@ RUN pip install -r requirements.txt
 
 WORKDIR /home/app
 
-RUN adduser app -D
 RUN chown -R app ./
 USER app
 

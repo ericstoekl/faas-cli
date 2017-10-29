@@ -18,6 +18,7 @@ COPY .  .
 RUN dotnet publish -c release -o published
 
 FROM microsoft/dotnet:2.0-runtime
+RUN useradd app
 
 #ADD https://github.com/openfaas/faas/releases/download/0.6.1/fwatchdog /usr/bin
 RUN apt-get update -qy \
@@ -32,7 +33,6 @@ RUN apt-get update -qy \
 WORKDIR /home/app/
 COPY --from=builder /home/app/src/published .
 
-RUN useradd app
 RUN chown -R app ./
 USER app
 

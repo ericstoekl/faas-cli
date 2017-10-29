@@ -1,5 +1,7 @@
 FROM ruby:2.4-alpine3.6
 
+RUN adduser app -D
+
 # Alternatively use ADD https:// (which will not be cached by Docker builder)
 RUN apk --no-cache add curl \ 
     && echo "Pulling watchdog binary from Github." \
@@ -21,7 +23,6 @@ RUN bundle install
 
 WORKDIR /home/app/
 
-RUN adduser app -D
 RUN chown -R app ./
 USER app
 
