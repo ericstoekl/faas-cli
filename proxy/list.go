@@ -27,7 +27,7 @@ func ListFunctions(gateway string, verbose bool) ([]requests.Function, error) {
 	if verbose {
 		getPath += "?v=true"
 	}
-	getRequest, _ := http.NewRequest(http.MethodGet, gateway + getPath, nil)
+	getRequest, _ := http.NewRequest(http.MethodGet, gateway+getPath, nil)
 	res, err := client.Do(getRequest)
 	if err != nil {
 		fmt.Println()
