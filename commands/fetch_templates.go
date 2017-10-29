@@ -24,11 +24,10 @@ const (
 	templateDirectory         = "./template/"
 )
 
-var cacheCanWriteLanguage = make(map[string]bool)
-
 // fetchTemplates fetch code templates from GitHub master zip file.
 func fetchTemplates(templateURL string, overwrite bool) error {
-	var existingLanguages []string
+	var cannotOverwriteLanguages []string
+	availableLanguages := make(map[string]bool)
 	var fetchedTemplates []string
 
 	if len(templateURL) == 0 {
@@ -64,15 +63,15 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 			if len(languageSplit) == 3 && relativePath[len(relativePath)-1:] == "/" {
 				// template/language/
 
-				if !canWriteLanguage(language, overwrite) {
-					existingLanguages = append(existingLanguages, language)
+				if !canWriteLanguage(&availableLanguages, language, overwrite) {
+					cannotOverwriteLanguages = append(cannotOverwriteLanguages, language)
 					continue
 				}
 				fetchedTemplates = append(fetchedTemplates, language)
 			} else {
 				// template/language/*
 
-				if !canWriteLanguage(language, overwrite) {
+				if !canWriteLanguage(&availableLanguages, language, overwrite) {
 					continue
 				}
 			}
@@ -97,8 +96,8 @@ func fetchTemplates(templateURL string, overwrite bool) error {
 		}
 	}
 
-	if len(existingLanguages) > 0 {
-		log.Printf("Cannot overwrite the following %d directories: %v\n", len(existingLanguages), existingLanguages)
+	if len(cannotOverwriteLanguages) > 0 {
+		log.Printf("Cannot overwrite the following %d directories: %v\n", len(cannotOverwriteLanguages), cannotOverwriteLanguages)
 	}
 
 	zipFile.Close()
@@ -190,31 +189,33 @@ func createPath(relativePath string, perms os.FileMode) error {
 
 // canWriteLanguage tells whether the language can be processed or not
 // if overwrite is activated, the directory template/language/ is removed before to keep it in sync
-func canWriteLanguage(language string, overwrite bool) bool {
-
+func canWriteLanguage(availableLanguages *map[string]bool, language string, overwrite bool) bool {
+	canWrite := false
 	if len(language) > 0 {
-		if _, ok := cacheCanWriteLanguage[language]; ok {
-			return cacheCanWriteLanguage[language]
+		if _, ok := (*availableLanguages)[language]; ok {
+			return (*availableLanguages)[language]
 		}
-
-		dir := templateDirectory + language
-		if _, err := os.Stat(dir); err == nil {
-			// The directory template/language/ exists
-			if overwrite == false {
-				cacheCanWriteLanguage[language] = false
-			} else {
-				// Clean up the directory to keep in sync with new updates
-				if err := os.RemoveAll(dir); err != nil {
-					log.Panicf("Directory %s cannot be removed", dir)
-				}
-				cacheCanWriteLanguage[language] = true
-			}
-		} else {
-			cacheCanWriteLanguage[language] = true
-		}
-
-		return cacheCanWriteLanguage[language]
+		canWrite = checkLanguage(language, overwrite)
+		(*availableLanguages)[language] = canWrite
 	}
 
-	return false
+	return canWrite
+}
+
+func checkLanguage(language string, overwrite bool) bool {
+	dir := templateDirectory + language
+	if _, err := os.Stat(dir); err == nil {
+		// The directory template/language/ exists
+		if !overwrite {
+			return false
+		} else {
+			// Clean up the directory to keep in sync with new updates
+			if err := os.RemoveAll(dir); err != nil {
+				log.Panicf("Directory %s cannot be removed", dir)
+			}
+			return true
+		}
+	} else {
+		return true
+	}
 }

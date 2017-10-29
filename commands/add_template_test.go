@@ -40,9 +40,6 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	faasCmd.SetArgs([]string{"template", "pull", repository})
 	faasCmd.Execute()
 
-	// reset cacheCanWriteLanguage
-	cacheCanWriteLanguage = make(map[string]bool)
-
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
@@ -50,9 +47,6 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 
 	faasCmd.SetArgs([]string{"template", "pull", repository})
 	faasCmd.Execute()
-
-	// reset cacheCanWriteLanguage
-	cacheCanWriteLanguage = make(map[string]bool)
 
 	if !r.MatchString(buf.String()) {
 		t.Fatal(buf.String())
@@ -63,7 +57,8 @@ func Test_addTemplate_with_overwriting(t *testing.T) {
 	faasCmd.SetArgs([]string{"template", "pull", repository, "--overwrite"})
 	faasCmd.Execute()
 
-	if r.MatchString(buf.String()) {
+	str := buf.String()
+	if r.MatchString(str) {
 		t.Fatal()
 	}
 
