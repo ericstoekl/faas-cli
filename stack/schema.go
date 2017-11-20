@@ -41,6 +41,8 @@ type Function struct {
 
 	// Requests of resources requested by function
 	Requests *FunctionResources `json:"requests"`
+
+	Secrets []string `json:"secrets"`
 }
 
 // FunctionResources Memory and CPU
