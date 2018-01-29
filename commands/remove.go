@@ -41,7 +41,8 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	var services stack.Services
 	var gatewayAddress string
 	var yamlGateway string
-	if len(yamlFile) > 0 {
+
+	if len(yamlFile) > 0 && len(args) == 0 {
 		parsedServices, err := stack.ParseYAMLFile(yamlFile, regex, filter)
 		if err != nil {
 			return err
@@ -67,7 +68,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 			proxy.DeleteFunction(gatewayAddress, function.Name)
 		}
 	} else {
-		if len(args) < 1 {
+		if len(args) == 0 {
 			return fmt.Errorf("please provide the name of a function to delete")
 		}
 

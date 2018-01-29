@@ -113,7 +113,11 @@ func runDeployCommand(args []string, image string, fprocess string, functionName
 	}
 
 	var services stack.Services
-	if len(yamlFile) > 0 {
+	hasFuncName := false
+
+	if len(functionName) > 0 {
+		hasFuncName = true
+	} else if len(yamlFile) > 0 {
 		parsedServices, err := stack.ParseYAMLFile(yamlFile, regex, filter)
 		if err != nil {
 			return err
@@ -129,6 +133,8 @@ func runDeployCommand(args []string, image string, fprocess string, functionName
 		if parsedServices != nil {
 			services = *parsedServices
 		}
+	} else {
+		return fmt.Errorf(" faas-cli deploy error: --name required")
 	}
 
 	if len(services.Functions) > 0 {
@@ -193,9 +199,9 @@ Error: %s`, fprocessErr.Error())
 
 			proxy.DeployFunction(function.FProcess, services.Provider.GatewayURL, function.Name, function.Image, function.Language, deployFlags.replace, allEnvironment, services.Provider.Network, functionConstraints, deployFlags.update, deployFlags.secrets, allLabels, functionResourceRequest1)
 		}
-	} else {
-		if len(image) == 0 || len(functionName) == 0 {
-			return fmt.Errorf("To deploy a function give --yaml/-f or a --image flag")
+	} else if hasFuncName {
+		if len(image) == 0 {
+			return fmt.Errorf("please provide a --image to be deployed")
 		}
 
 		gateway = getGatewayURL(gateway, defaultGateway, gateway, os.Getenv(openFaaSURLEnvironment))
@@ -224,6 +230,8 @@ func deployImage(
 	if labelErr != nil {
 		return fmt.Errorf("error parsing labels: %v", labelErr)
 	}
+
+	fmt.Printf("Deploying: %s.\n", functionName)
 
 	functionResourceRequest1 := proxy.FunctionResourceRequest{}
 	proxy.DeployFunction(fprocess, gateway, functionName, image, language, deployFlags.replace, envvars, network, deployFlags.constraints, deployFlags.update, deployFlags.secrets, labelMap, functionResourceRequest1)
