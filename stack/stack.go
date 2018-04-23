@@ -135,3 +135,33 @@ func fetchYAML(address *url.URL) ([]byte, error) {
 
 	return resBytes, err
 }
+
+// getServicesFromYAML gets Services object from a given YAML file
+func getServicesFromYAML(yamlFile, regex, filter string) (Services, error) {
+	parsedServices, err := ParseYAMLFile(yamlFile, regex, filter)
+	if err != nil {
+		return Services{}, err
+	}
+	return *parsedServices, nil
+}
+
+// GetServicesFromYAMLOrInline will construct the Service object from the correct source
+func GetServicesFromYAMLOrInline(functionName, yamlFile, regex, filter string) Services {
+	var services Services
+	var err error
+	if len(yamlFile) > 0 && len(functionName) == 0 {
+		services, err = getServicesFromYAML(yamlFile, regex, filter)
+		if err != nil {
+			fmt.Printf("Couldn't parse YAML file '%s' due to error: %v", yamlFile, err)
+			return Services{}
+		}
+	} else {
+		services.Provider = Provider{
+			Name: "faas",
+		}
+		services.Functions = map[string]Function{
+			functionName: Function{},
+		}
+	}
+	return services
+}
